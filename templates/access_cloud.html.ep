@@ -1,0 +1,7 @@
+access cloud
+
+<center>
+<b>
+%= submit_button 'click here to access the cloud', class => 'w3-button w3-green'
+</b>
+</center>

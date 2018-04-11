@@ -1,0 +1,15 @@
+
+% if ($c->session('user')) {
+    Welcome, <%= session('user') %>!
+% } else {
+    Please log in.
+    %= form_for 'login' => method => 'POST' => begin
+    %= text_field 'username', placeholder => 'Username', class => 'w3-input';
+    <br>
+    <center>
+    %= submit_button 'log in with CAC', class => 'w3-button w3-blue-gray';
+    &nbsp;
+    %= submit_button 'log in with MFA', class => 'w3-button w3-dark-gray';
+    %= end
+    </center>
+% }

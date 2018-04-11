@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+use Mojolicious::Lite;
+use v5.20;
+use experimental 'signatures';
+
+my @pages = qw/
+login
+create_user
+manage_roles
+create_task
+enter_loa
+access_cloud
+reconcile
+reports
+logout
+/;
+
+my %labels = (
+    login => 'Login', create_user => "Add a new AT-AT user",
+    manage_roles => 'Manage roles', create_task => 'Create a task',
+    enter_loa => 'Add an LOA', access_cloud => 'Access the cloud!',
+    reconcile => 'Reconcile invoices', reports => 'Run reports',
+    logout => 'Logout'
+    );
+
+app->defaults(
+    pages => \@pages,
+    labels => \%labels,
+    layout => 'default',
+);
+
+my %perms # user => role => 1
+    = (
+        brian => { manage_roles => 1, create_user => 1, cac => 1, mfa => 1 }
+    );
+
+app->helper(perms => sub($c) {
+    \%perms
+});
+
+app->helper(user => sub($c) {
+    $c->session('user');
+});
+
+app->helper(users => sub($c) {
+    keys %perms
+});
+
+app->helper(roles => sub($c) {
+    ( grep { $_ !~ /^(login|logout)$/ } @pages ),
+    'cac', 'mfa'
+});
+
+app->helper(user_can => sub($c,$role) {
+    for ($role) {
+         /login/  and return !$c->session('user');
+         /logout/ and return !!$c->session('user');
+    }
+    my $user = $c->session('user') or return 0;
+    return $perms{ $user }{ $role };
+});
+
+get '/' => sub($c) {
+  $c->render;
+} => 'dashboard';
+
+get '/login';
+get '/manage_roles';
+get '/create_user';
+get '/create_task';
+get '/enter_loa';
+get '/access_cloud';
+get '/reconcile';
+get '/reports';
+
+post '/login' => sub($c) {
+    unless ($c->req->param('username')) {
+        $c->flash(msg => 'missing username');
+        return $c->redirect_to('login');
+     }
+    $c->session('user', $c->req->param('username') );
+    $c->redirect_to('login');
+};
+
+post '/manage_roles' => sub($c) {
+    for my $user ($c->users) {
+        for my $role ($c->roles) {
+            $perms{ $user }{ $role } = !!$c->param("$user\_$role");
+        }
+    }
+    $c->flash(msg => "Saved changes");
+    $c->redirect_to('manage_roles');
+};
+
+post '/create_user' => sub($c) {
+    my $name = $c->param('name');
+    $perms{ $name }{ 'login' } = 1;
+    $c->flash(msg => "Added user $name");
+    $c->redirect_to('manage_roles');
+};
+
+get '/logout' => sub($c) {
+    $c->session('user','');
+};
+
+app->start;

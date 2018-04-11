@@ -1,0 +1,12 @@
+create user
+
+%= form_for 'create_user' => method => 'POST' => begin
+%= text_field 'name', class => 'w3-input', placeholder => 'name';
+%= text_field 'rank', class => 'w3-input', placeholder => 'rank';
+%= text_field 'serial number', class => 'w3-input', placeholder => 'serial number';
+Use CAC for authentication?
+%= select_field use_cac => ['yes','no'];
+<center>
+%= submit_button 'create user ', class => 'w3-button w3-blue-gray';
+</center>
+%= end

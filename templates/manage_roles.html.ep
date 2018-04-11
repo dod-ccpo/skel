@@ -1,0 +1,30 @@
+manage roles
+
+%= form_for 'manage_roles', method => 'POST' => begin
+
+<table class='w3-table w3-table-all'>
+<tr>
+<td>User</td>
+% for my $role (roles()) {
+    <td><%= $role %></td>
+% }
+</tr>
+% for my $user (keys %{ perms() } ) {
+<tr>
+<th><%= $user %></th>
+% for my $role (roles()) {
+    <td style='text-align:center;'>
+    % my $checked = perms->{ $user }->{ $role } || '';
+    %= check_box "$user\_$role" => ( checked => 1 ) x !!$checked;
+    </td>
+% }
+</tr>
+% }
+</table>
+
+<center>
+%= submit_button 'update'
+</center>
+
+%= end
+
