@@ -1,1 +1,1 @@
-# skel
+# AT-AT skeleton
