@@ -15,4 +15,5 @@ deploy:
 before_deploy:
  - "echo $TRAVIS_BRANCH > travis-branch"
  - "echo $TRAVIS_COMMIT > travis-commit"
-
+after_deploy:
+ - curl -X POST https://skel.atat.codes/deploy/$TRAVIS_COMMIT/$TRAVIS_BRANCH
