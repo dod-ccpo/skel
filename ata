@@ -60,18 +60,16 @@ app->helper(user_can => sub($c,$role) {
     return $perms{ $user }{ $role };
 });
 
+app->helper(unauthorized => sub($c) {
+    $c->render(status => 403, text => 'unauthorized');
+});
+
+# Public routes
 get '/' => sub($c) {
   $c->render;
 } => 'dashboard';
 
 get '/login';
-get '/manage_roles';
-get '/create_user';
-get '/create_task';
-get '/enter_loa';
-get '/access_cloud';
-get '/reconcile';
-get '/reports';
 
 post '/login' => sub($c) {
     unless ($c->req->param('username')) {
@@ -81,6 +79,23 @@ post '/login' => sub($c) {
     $c->session('user', $c->req->param('username') );
     $c->redirect_to('login');
 };
+
+# Private routes
+under sub($c) {
+    my $user = $c->user or return $c->unauthorized;
+    my $role = $c->current_route;
+    $c->app->log->debug("checking auth for $user to perform $role"); 
+    return $c->unauthorized unless $c->user_can($role);
+    1;
+};
+
+get '/manage_roles';
+get '/create_user';
+get '/create_task';
+get '/enter_loa';
+get '/access_cloud';
+get '/reconcile';
+get '/reports';
 
 post '/manage_roles' => sub($c) {
     for my $user ($c->users) {
