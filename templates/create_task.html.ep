@@ -1,2 +1,7 @@
 create task
 
+%= form_for 'create_task' => method => 'POST' => begin
+%= text_field 'task_number', placeholder => 'Task Number', class => 'w3-input';
+%= text_field 'task_description', placeholder => 'Task Description', class => 'w3-input';
+%= submit_button 'create', class => 'w3-button w3-blue-gray';
+%= end

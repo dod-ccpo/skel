@@ -1,4 +1,4 @@
-manage roles
+manage roles for task <%= task %> : <%= task_description( task() ) %>
 
 %= form_for 'manage_roles', method => 'POST' => begin
 
@@ -14,8 +14,8 @@ manage roles
 <th><%= $user %></th>
 % for my $role (roles()) {
     <td style='text-align:center;'>
-    % my $checked = perms->{ $user }->{ $role } || '';
-    %= check_box "$user\_$role" => ( checked => 1 ) x !!$checked;
+    % my $checked = check_perms( $user, $role );
+    %= check_box "$user\_$role" => ( checked => 1 ) x $checked;
     </td>
 % }
 </tr>
