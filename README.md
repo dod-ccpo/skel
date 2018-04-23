@@ -20,3 +20,11 @@ Install prerequisites:
 
     ./ata daemon
 
+# Run the server in dev mode and auto-reload if assets are changed
+
+    morbo -w assets ./ata
+
+# Run the server in production mode
+
+    hypnotoad ./ata
+
