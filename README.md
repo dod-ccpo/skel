@@ -6,7 +6,15 @@
 
 First install perlbrew (http://perlbrew.pl and a recent perl).
 
-Then, `perlbrew install-cpanm` to install cpanminus.
+    curl -L https://install.perlbrew.pl | bash
+    perlbrew available
+    perlbrew install 5.26.2
+    perlbrew switch 5.26.2
+    # update ~/.profile as instructed
+
+Then, install cpanminus:
+
+    perlbrew install-cpanm
 
 Install prerequisites:
 
