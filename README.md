@@ -8,7 +8,9 @@ First install perlbrew (http://perlbrew.pl and a recent perl).
 
 Then, `perlbrew install-cpanm` to install cpanminus.
 
-Then `cpanm Mojolicious` to install Mojolicious.
+Install prerequisites:
+
+    cpanm --installdeps .
 
 # Run the tests
 
