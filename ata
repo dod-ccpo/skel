@@ -4,6 +4,19 @@ use Mojo::Util qw/trim/;
 use v5.20;
 use experimental 'signatures';
 
+plugin AssetPack => {
+    pipes => [qw/Sass Css Combine/]
+};
+
+app->asset->process(
+    'ata.css' => (
+        "https://www.w3schools.com/w3css/4/w3.css",
+        "https://fonts.googleapis.com/css?family=Raleway",
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
+        "scss/skel.scss",
+    )
+);
+
 my @pages = qw/
 login
 select_task
