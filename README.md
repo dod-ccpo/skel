@@ -36,3 +36,16 @@ Install prerequisites:
 
     hypnotoad ./ata
 
+# Testing
+
+Run all tests:
+
+    prove t
+
+Run an individual test:
+
+    prove t/testname.t
+    # or
+    perl -Ilib t/testname.t
+
+

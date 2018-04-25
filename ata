@@ -4,48 +4,44 @@ use Mojo::Util qw/trim/;
 use v5.20;
 use experimental 'signatures';
 
-plugin AssetPack => {
-    pipes => [qw/Sass Css Combine/]
-};
+plugin AssetPack => {pipes => [qw/Sass Css Combine/]};
 
 app->asset->process(
-    'ata.css' => (
-        "https://www.w3schools.com/w3css/4/w3.css",
-        "https://fonts.googleapis.com/css?family=Raleway",
-        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
-        "scss/skel.scss",
-    )
+  'ata.css' => (
+    "https://www.w3schools.com/w3css/4/w3.css",
+    "https://fonts.googleapis.com/css?family=Raleway",
+"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
+    "scss/skel.scss",
+  )
 );
 
 my @pages = qw/
-login
-select_task
-create_task
-create_user
-manage_roles
-enter_loa
-access_cloud
-reconcile
-reports
-logout
-/;
+  login
+  select_task
+  create_task
+  create_user
+  manage_roles
+  enter_loa
+  access_cloud
+  reconcile
+  reports
+  logout
+  /;
 
 my %labels = (
-    login => 'Login',
-    create_user => "Add a new AT-AT user",
-    manage_roles => 'Manage roles',
-    select_task => 'Select a task',
-    create_task => 'Create a task',
-    enter_loa => 'Add an LOA', access_cloud => 'Access the cloud!',
-    reconcile => 'Reconcile invoices', reports => 'Run reports',
-    logout => 'Logout'
-    );
-
-app->defaults(
-    pages => \@pages,
-    labels => \%labels,
-    layout => 'default',
+  login        => 'Login',
+  create_user  => "Add a new AT-AT user",
+  manage_roles => 'Manage roles',
+  select_task  => 'Select a task',
+  create_task  => 'Create a task',
+  enter_loa    => 'Add an LOA',
+  access_cloud => 'Access the cloud!',
+  reconcile    => 'Reconcile invoices',
+  reports      => 'Run reports',
+  logout       => 'Logout'
 );
+
+app->defaults(pages => \@pages, labels => \%labels, layout => 'default',);
 
 # Anyone can create a task using a task number,
 # and can set up permissions for other users
@@ -55,100 +51,123 @@ app->defaults(
 #
 # Permissions are based on task + role.
 
-my %perms;  # user => task => role => 1
-my %tasks;  # task number => description
+my %perms;    # user => task => role => 1
+my %tasks;    # task number => description
 
-app->helper(perms => sub($c) {
-    \%perms
-});
+app->helper(
+  perms => sub($c) {
+    \%perms;
+  }
+);
 
 app->helper(user => sub($c) { $c->session('user'); });
-app->helper(task => sub($c) { 
+app->helper(
+  task => sub($c) {
     my $task = $c->session('task') or return '';
     return $task if exists($tasks{$task});
-    $c->session('task','');
+    $c->session('task', '');
     return '';
-});
-app->helper(task_description => sub($c,$task) {
+  }
+);
+app->helper(
+  task_description => sub ($c, $task) {
     return $tasks{$task};
-});
+  }
+);
 
-app->helper(users => sub($c) {
-    keys %perms
-});
+app->helper(
+  users => sub($c) {
+    keys %perms;
+  }
+);
 
-app->helper(roles => sub($c) {
-    ( grep { $_ !~ /^(login|logout)$/ } @pages ),
-    'cac', 'mfa'
-});
+app->helper(
+  roles => sub($c) {
+    (grep { $_ !~ /^(login|logout)$/ } @pages), 'cac', 'mfa';
+  }
+);
 
 # Check perms for a user
-app->helper(check_perms => sub($c, $user, $role) {
+app->helper(
+  check_perms => sub ($c, $user, $role) {
 
     # Unchangeable
     for ($role) {
-         /login/  and return !$user;
-         /logout/ and return 1;
+      /login/  and return !$user;
+      /logout/ and return 1;
     }
 
     # Defaults if no task is selected
     my $task = $c->task;
     unless ($task) {
-        for ($role) {
-            /create_task/ and return !!$user;
-            /select_task/ and return !!$user;
-        }
-        return 0;
+      for ($role) {
+        /create_task/ and return !!$user;
+        /select_task/ and return !!$user;
+      }
+      return 0;
     }
 
     # Explicitly set.
     return 0 unless $user;
-    if (exists( $perms{ $user }{ $task }{ $role } ) ) {
-        return $perms{ $user }{ $task }{ $role }
+    if (exists($perms{$user}{$task}{$role})) {
+      return $perms{$user}{$task}{$role};
     }
 
     # Fallbacks.
     for ($role) {
-        /create_task/ and return !!$user;
-        /select_task/ and return !!$user;
+      /create_task/ and return !!$user;
+      /select_task/ and return !!$user;
     }
 
     return 0;
-});
+  }
+);
 
 # Check perms for the logged in user.
-app->helper(user_can => sub($c,$role) {
-    return $c->check_perms($c->user,$role);
-});
+app->helper(
+  user_can => sub ($c, $role) {
+    return $c->check_perms($c->user, $role);
+  }
+);
 
-app->helper(users_tasks => sub($c) {
-    my $task_role = $perms{ $c->user } or return;
+app->helper(
+  users_tasks => sub($c) {
+    my $task_role = $perms{$c->user} or return;
     sort keys %$task_role;
-});
+  }
+);
 
-app->helper(add_task => sub($c,$number,$description) {
-   $tasks{ $number } = $description;
-   $perms{ $c->user }{ $number }{ 'manage_roles' } = 1;
-   $perms{ $c->user }{ $number }{ 'create_user' } = 1;
-});
+app->helper(
+  add_task => sub ($c, $number, $description) {
+    $tasks{$number}                           = $description;
+    $perms{$c->user}{$number}{'manage_roles'} = 1;
+    $perms{$c->user}{$number}{'create_user'}  = 1;
+  }
+);
 
-app->helper(select_task => sub($c,$number) {
+app->helper(
+  select_task => sub ($c, $number) {
     $c->app->log->debug("Switching to task $number");
     $c->session(task => $number);
-});
+  }
+);
 
-app->helper(error => sub($c, $msg) {
+app->helper(
+  error => sub ($c, $msg) {
     $c->flash(msg => $msg);
     $c->redirect_to($c->current_route);
-});
+  }
+);
 
-app->helper(unauthorized => sub($c) {
+app->helper(
+  unauthorized => sub($c) {
     $c->render(status => 403, inline => <<DONE );
 unauthorized
 <br>
 %= link_to 'home' => 'dashboard'
 DONE
-});
+  }
+);
 
 # Public routes
 get '/' => sub($c) {
@@ -157,33 +176,33 @@ get '/' => sub($c) {
 
 get '/login';
 get '/logout' => sub($c) {
-    $c->session(user => '');
-    $c->session(task => '');
-    $c->session(expires => 1);
+  $c->session(user    => '');
+  $c->session(task    => '');
+  $c->session(expires => 1);
 };
 
 
 post '/login' => sub($c) {
-    unless ($c->req->param('username')) {
-        $c->flash(msg => 'missing username');
-        return $c->redirect_to('login');
-     }
-    $c->session('user', $c->req->param('username') );
-    $c->redirect_to('login');
+  unless ($c->req->param('username')) {
+    $c->flash(msg => 'missing username');
+    return $c->redirect_to('login');
+  }
+  $c->session('user', $c->req->param('username'));
+  $c->redirect_to('login');
 };
 
 # Private routes
 under sub($c) {
-    $c->app->log->debug( $c->dumper( \%perms ) );
-    my $user = $c->user or return $c->unauthorized;
-    my $role = $c->current_route;
-    $c->app->log->debug("checking auth for $user to perform $role"); 
-    return $c->unauthorized unless $c->user_can($role);
-    1;
+  $c->app->log->debug($c->dumper(\%perms));
+  my $user = $c->user or return $c->unauthorized;
+  my $role = $c->current_route;
+  $c->app->log->debug("checking auth for $user to perform $role");
+  return $c->unauthorized unless $c->user_can($role);
+  1;
 };
 
 get '/select_task' => sub($c) {
-    $c->select_task($c->param('task')) if $c->param('task');
+  $c->select_task($c->param('task')) if $c->param('task');
 };
 get '/manage_roles';
 get '/create_user';
@@ -194,33 +213,33 @@ get '/reconcile';
 get '/reports';
 
 post '/manage_roles' => sub($c) {
-    for my $user ($c->users) {
-        for my $role ($c->roles) {
-            app->log->debug("setting $user @{[ $c->task ]} $role to " .
-                !!$c->param("$user\_$role") );
-            $perms{ $user }{ $c->task }{ $role } = !!$c->param("$user\_$role");
-        }
+  for my $user ($c->users) {
+    for my $role ($c->roles) {
+      app->log->debug("setting $user @{[ $c->task ]} $role to "
+          . !!$c->param("$user\_$role"));
+      $perms{$user}{$c->task}{$role} = !!$c->param("$user\_$role");
     }
-    $c->flash(msg => "Saved changes");
-    $c->redirect_to('manage_roles');
+  }
+  $c->flash(msg => "Saved changes");
+  $c->redirect_to('manage_roles');
 };
 
 post '/create_user' => sub($c) {
-    my $user = $c->param('name');
-    $perms{ $user }{ $c->task } = { };
-    $c->flash(msg => "Added user $user");
-    $c->redirect_to('manage_roles');
+  my $user = $c->param('name');
+  $perms{$user}{$c->task} = {};
+  $c->flash(msg => "Added user $user");
+  $c->redirect_to('manage_roles');
 };
 
 post '/create_task' => sub($c) {
-    my $task_number = trim( $c->param('task_number') )
-        or return $c->error('missing task number');
-    my $task_description = trim( $c->param('task_description') )
-        or return $c->error('missing task description');
-    return "Task $task_number already exists" if exists( $tasks{ $task_number } );
-    $c->add_task( $task_number => $task_description );
-    $c->select_task($task_number);
-    $c->redirect_to('select_task');
+  my $task_number = trim($c->param('task_number'))
+    or return $c->error('missing task number');
+  my $task_description = trim($c->param('task_description'))
+    or return $c->error('missing task description');
+  return "Task $task_number already exists" if exists($tasks{$task_number});
+  $c->add_task($task_number => $task_description);
+  $c->select_task($task_number);
+  $c->redirect_to('select_task');
 };
 
 app->start;
