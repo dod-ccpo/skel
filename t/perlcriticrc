@@ -1,4 +1,13 @@
 # Put perlcritic policies/exceptions here, for example:
 
 [TestingAndDebugging::RequireUseStrict]
-severity = 5
+# Mojo::Base does this automatically.
+severity = 4
+
+[Modules::RequireFilenameMatchesPackage]
+# To allow multiple classes in a file.
+severity = 4
+
+[Subroutines::ProhibitSubroutinePrototypes]
+# To allow signatures.
+severity = 1

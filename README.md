@@ -1,5 +1,4 @@
 # AT-AT skeleton
-
 [![Build Status](https://travis-ci.org/dod-ccpo/skel.svg?branch=master)](https://travis-ci.org/dod-ccpo/skel)
 
 # Prerequisites
@@ -40,12 +39,19 @@ Install prerequisites:
 
 Run all tests:
 
-    prove t
+    prove -l t
 
 Run an individual test:
 
-    prove t/testname.t
+    prove -l t/testname.t
     # or
     perl -Ilib t/testname.t
 
+Critique an individual file, with verbose output:
+
+    perlcritic -p t/perlcriticrc -verbose=10 lib/Atat/Objects.pm
+
+Tidy an individual file automatically:
+
+    perltidy -b lib/Atat/Objects.pm
 

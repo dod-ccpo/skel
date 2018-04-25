@@ -4,7 +4,12 @@ use Mojo::Util qw/trim/;
 use v5.20;
 use experimental 'signatures';
 
-plugin AssetPack => {pipes => [qw/Sass Css Combine/]};
+use lib './lib';
+use Atat::Objects;
+
+plugin AssetPack => {
+    pipes => [qw/Sass Css Combine/]
+};
 
 app->asset->process(
   'ata.css' => (
