@@ -1,6 +1,9 @@
 language: perl
 perl:
 - '5.26'
+env:
+  global:
+    COVERAGE=1 AUTHOR_TESTING=1
 deploy:
   provider: cloudfiles
   username:
@@ -12,8 +15,19 @@ deploy:
     secure: KCo75nxwLR50A02y8Iq5nu6pVBFZnyWudCRNif0CTy7+9OZEEJb2naeMgD4prmBMApjNpf70uwz8I1Svbr1F8lGcJW/hfGn4VIpdYZKLrVYk05JyAkHikwhSsYgA04O/TFIaOVfG3aJjWv/cxP41tBisyaUUnRqig5zGw7ofULylfOz/rb1HktPr+DSl56ncKlPJhXYM8xHhNtikPdY6vbOtqoF1EXc+Uf8rWx54Jr9lAWN+69JiEUcth2rir4J40WxlNurfF+UM6mjoHtgqJ6Hpur7PCSG35ezyXezZhjgvvBVTTIZHWfJYxWFtYtig08opu29detV/w0K/yyGM4U1IHgon5x0KsMNLSXUMWyE053LoJPx1SVrlkZ4JJ/tbvyJYSgyhwgFFW07Z/S8wT2zn8zgD8EmfKtEnGtOyD8bzJEZ9FkyPq3DKtL+BZxfbNqhzVX6rtFllvDVinNrv9usmNZnpijDn13dAEd2uAMROPj5irpNVoe638KYsvVrFsjPo/p64Nf2qCELvv42tMLmSK7xnUnMroxWEE8p4GRMVtKU4QlK85xXBednYiGe86SC/teeiaFgPWmJtLYXPWHsbu0n7NM+BUV8htoCjhWt1zpryH77nsvnbfLmIHX+kWJlfAYj1qc3Wux2Sfu8xMHTJeKu12AjEe4BRKAn78DM=
   on:
     all_branches: true
+before_install:
+  - eval $(curl https://travis-perl.github.io/init) --auto
+  - cpan-install --coverage
+  - cpan-install --deps
+  - cpanm --installdeps .
+before_script:
+  - coverage-setup
+after_success:
+  - coverage-report
 before_deploy:
  - "echo $TRAVIS_BRANCH > travis-branch"
  - "echo $TRAVIS_COMMIT > travis-commit"
 after_deploy:
  - curl -X POST https://skel.atat.codes/deploy/$TRAVIS_COMMIT/$TRAVIS_BRANCH
+script:
+ - PERL5LIB=. prove -lv t

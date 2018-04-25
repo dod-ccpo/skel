@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/dod-ccpo/skel.svg?branch=master)](https://travis-ci.org/dod-ccpo/skel)
 
+[![Coverage Status](https://coveralls.io/repos/github/dod-ccpo/skel/badge.svg)](https://coveralls.io/github/dod-ccpo/skel)
+
 # Prerequisites
 
 First install perlbrew (http://perlbrew.pl and a recent perl).
