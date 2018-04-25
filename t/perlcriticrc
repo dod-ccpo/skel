@@ -1,0 +1,4 @@
+# Put perlcritic policies/exceptions here, for example:
+
+[TestingAndDebugging::RequireUseStrict]
+severity = 5
