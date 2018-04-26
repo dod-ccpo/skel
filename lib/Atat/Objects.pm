@@ -13,11 +13,9 @@ package Bucket {
   has 'used';
   has 'administrators';
 
-  has 'parents' => sub { [] };
+  has 'parents' => sub { [] };    # [ { bucket => $x, amount => $y} , ... ]
 
-  # [ { bucket => $x, amount => $y} , ... ]
-
-  sub remaining($self) {
+  sub remaining ($self) {
     $self->amount - $self->used;
   }
 
