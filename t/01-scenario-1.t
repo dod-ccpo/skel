@@ -27,10 +27,13 @@ $t->get_ok('/login')->status_is(200)
 
 # b) charlie adds a task number
 
-$t->get_ok('/create_task')
-  ->post_ok('/create_task' => form =>
-    {task_number => 8011, task_description => 'an interesting task'})
-  ->status_is(200);
+$t->get_ok('/create_bucket')->post_ok(
+  '/create_bucket' => form => {
+    bucket_type => 'task_order',
+    task_number => 8011,
+    name        => 'an interesting task'
+  }
+)->status_is(200);
 
 # c) charlie adds alice, with permission to manage roles
 # d) charlie adds bob, with permission to manage roles
@@ -63,8 +66,8 @@ $t->get_ok('/logout')->status_is(200);
 $t->get_ok('/login')->status_is(200)
   ->post_ok('/login' => form => {username => 'alice', 'log in with CAC' => 1});
 
-# First, select the task.
-$t->get_ok('/select_task')->get_ok('/select_task?task=8011')
+# First, select the task order.
+$t->get_ok('/select_bucket')->get_ok('/select_bucket?bucket=8011')
   ->get_ok('/manage_roles')->status_is(200);
 
 done_testing;

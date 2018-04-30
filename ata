@@ -240,4 +240,4 @@ post '/create_bucket' => sub($c) {
   $c->redirect_to('select_bucket');
 };
 
-app->start;
+app->start unless caller eq 'main';
