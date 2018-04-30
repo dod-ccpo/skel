@@ -1,9 +1,12 @@
 assetpack.db
 .sass-cache
 assets/cache
+lib/assets/cache
 assets/assetpack.db
 MYMETA.json
 MYMETA.yml
 blib
 pm_to_blib
 *.bak
+MYMETA.json
+MYMETA.json.lock

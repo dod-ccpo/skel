@@ -4,7 +4,7 @@
 % } else {
     Please log in.
     %= form_for 'login' => method => 'POST' => begin
-    %= text_field 'username', placeholder => 'Username', class => 'w3-input';
+    %= text_field 'username', placeholder => 'Username', class => 'w3-input w3-border';
     <br>
     <center>
     %= submit_button 'log in with CAC', class => 'w3-button w3-blue-gray';

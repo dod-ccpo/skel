@@ -11,10 +11,10 @@
   <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>  Menu</button>
   <span class="w3-bar-item w3-left"><%= user() || 'not logged in' %></span>
   <span class="w3-bar-item w3-left">
-      % if (task) {
-      Task: <%= task() %> (<%= task_description(task()) %>)
+      % if (bucket) {
+      <%= bucket->name %>
       % } else {
-      No task order selected.
+      No funding pool selected.
       % }
   </span>
   <span class="w3-bar-item w3-right">AT-AT</span>

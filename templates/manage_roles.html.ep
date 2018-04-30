@@ -1,4 +1,4 @@
-manage roles for task <%= task %> : <%= task_description( task() ) %>
+manage roles for bucket <%= bucket->id %>
 
 %= form_for 'manage_roles', method => 'POST' => begin
 

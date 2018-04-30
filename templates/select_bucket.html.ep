@@ -1,19 +1,19 @@
-% my @tasks = users_tasks();
-% if (@tasks > 0) {
-Click on a task below to switch tasks:
+% my @buckets = users_buckets();
+% if (@buckets > 0) {
+Click on an entry below to switch funding pools:
 <ul class='w3-ul w3-border'>
-% for my $t (@tasks) {
-    <li class='<%= $t eq task() ? 'w3-blue' : 'w3-sand' %>'>
-    %= link_to url_for->query(task => $t) => begin
-        Task <%= $t %> : <%= task_description($t) %>
+% for my $b (@buckets) {
+    <li class='<%= $b eq bucket() ? 'w3-blue' : 'w3-sand' %>'>
+    %= link_to url_for->query(bucket => $b) => begin
+        Bucket <%= $b %>
     %= end
     </li>
 % }
 </ul>
 % } else {
-<p>You do not have access to any tasks.</p>
+<p>You do not have access to any funding pools.</p>
 % }
 <br>
-%= link_to 'create_task' => begin
-Create a task
+%= link_to 'create_bucket' => begin
+Create a new funding pool
 %= end

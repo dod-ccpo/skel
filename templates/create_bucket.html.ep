@@ -1,0 +1,34 @@
+<label>Type</label>
+
+<div class='w3-bar w3-grey'>
+% my $selected = ( (param 'selected') || 'task_order' );
+% for my $type (qw/task_order program mission team/) {
+    % if ($type eq $selected) {
+    <button class='w3-bar-item w3-button w3-black'><%= $type %></button>
+    % } else {
+    <button class='w3-bar-item w3-button w3-disabled'><%= $type %></button>
+    % }
+% }
+</div>
+<br>
+%= form_for 'create_bucket' => method => 'POST' => class => 'w3-container w3-light-grey w3-card-4 w3-round' => begin
+<header class='w3-container w3-dark-grey w3-round w3-center w3-margin'>
+Task Order
+</header>
+%= hidden_field 'bucket_type' => 'task_order';
+<label>Number</label>
+%= text_field 'task_number', placeholder => 'order number', class => 'w3-input w3-border';
+<label>Name</label>
+%= text_field 'name', placeholder => 'name', class => 'w3-input w3-border';
+<label>Funding Ceiling</label>
+%= text_field 'ceiling', placeholder => 'amount', class => 'w3-input w3-border';
+<label>CLIN 1</label>
+%= text_field 'clin', placeholder => 'Contract Line Number', class => 'w3-input w3-border';
+<label>CLIN 2</label>
+%= text_field 'clin', placeholder => 'Additional CLIN', class => 'w3-input w3-border';
+<br>
+%= submit_button 'create', class => 'w3-button w3-blue-gray';
+%= submit_button 'look up', class => 'w3-button w3-blue-gray';
+<br>
+<br>
+%= end

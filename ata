@@ -22,8 +22,8 @@ app->asset->process(
 
 my @pages = qw/
   login
-  select_task
-  create_task
+  select_bucket
+  create_bucket
   create_user
   manage_roles
   enter_loa
@@ -37,8 +37,8 @@ my %labels = (
   login        => 'Login',
   create_user  => "Add a new AT-AT user",
   manage_roles => 'Manage roles',
-  select_task  => 'Select a task',
-  create_task  => 'Create a task',
+  select_bucket  => 'Select funding pool',
+  create_bucket  => 'Create funding pool',
   enter_loa    => 'Add an LOA',
   access_cloud => 'Access the cloud!',
   reconcile    => 'Reconcile invoices',
@@ -48,16 +48,10 @@ my %labels = (
 
 app->defaults(pages => \@pages, labels => \%labels, layout => 'default',);
 
-# Anyone can create a task using a task number,
-# and can set up permissions for other users
-# to manage that task.
-#
-# If a task exists, it cannot be created.
-#
-# Permissions are based on task + role.
+# Permissions are based on bucket + role.
 
-my %perms;    # user => task => role => 1
-my %tasks;    # task number => description
+my %perms;     # user => bucket->id => role => 1
+my %buckets;   # bucket->id => bucket
 
 app->helper(
   perms => sub($c) {
@@ -67,16 +61,11 @@ app->helper(
 
 app->helper(user => sub($c) { $c->session('user'); });
 app->helper(
-  task => sub($c) {
-    my $task = $c->session('task') or return '';
-    return $task if exists($tasks{$task});
-    $c->session('task', '');
+  bucket => sub($c) {
+    my $id = $c->session('bucket') or return '';
+    return $buckets{$id} if exists($buckets{$id});
+    $c->session('bucket', '');
     return '';
-  }
-);
-app->helper(
-  task_description => sub ($c, $task) {
-    return $tasks{$task};
   }
 );
 
@@ -102,26 +91,27 @@ app->helper(
       /logout/ and return 1;
     }
 
-    # Defaults if no task is selected
-    my $task = $c->task;
-    unless ($task) {
+    # Defaults if no bucket is selected
+    my $bucket = $c->bucket or app->log->debug("no bucket");
+    unless ($bucket) {
       for ($role) {
-        /create_task/ and return !!$user;
-        /select_task/ and return !!$user;
+        /create_bucket/ and return !!$user;
+        /select_bucket/ and return !!$user;
       }
       return 0;
     }
 
     # Explicitly set.
     return 0 unless $user;
-    if (exists($perms{$user}{$task}{$role})) {
-      return $perms{$user}{$task}{$role};
+    app->log->debug("checking perms for user $user");
+    if (exists($perms{$user}{$bucket->id}{$role})) {
+      return $perms{$user}{$bucket->id}{$role};
     }
 
     # Fallbacks.
     for ($role) {
-      /create_task/ and return !!$user;
-      /select_task/ and return !!$user;
+      /create_bucket/ and return !!$user;
+      /select_bucket/ and return !!$user;
     }
 
     return 0;
@@ -136,24 +126,25 @@ app->helper(
 );
 
 app->helper(
-  users_tasks => sub($c) {
-    my $task_role = $perms{$c->user} or return;
-    sort keys %$task_role;
+  users_buckets => sub($c) {
+    my $grant = $perms{$c->user} or return;
+    sort keys %$grant;
   }
 );
 
 app->helper(
-  add_task => sub ($c, $number, $description) {
-    $tasks{$number}                           = $description;
-    $perms{$c->user}{$number}{'manage_roles'} = 1;
-    $perms{$c->user}{$number}{'create_user'}  = 1;
+  add_bucket => sub ($c, $bucket) {
+    my $id = $bucket->id;
+    $buckets{$id}                         = $bucket;
+    $perms{$c->user}{$id}{'manage_roles'} = 1;
+    $perms{$c->user}{$id}{'create_user'}  = 1;
   }
 );
 
 app->helper(
-  select_task => sub ($c, $number) {
-    $c->app->log->debug("Switching to task $number");
-    $c->session(task => $number);
+  select_bucket => sub ($c, $id) {
+    $c->app->log->debug("Switching to bucket " . $c->dumper($b));
+    $c->session(bucket => $id);
   }
 );
 
@@ -182,7 +173,7 @@ get '/' => sub($c) {
 get '/login';
 get '/logout' => sub($c) {
   $c->session(user    => '');
-  $c->session(task    => '');
+  $c->session(bucket  => '');
   $c->session(expires => 1);
 };
 
@@ -206,12 +197,12 @@ under sub($c) {
   1;
 };
 
-get '/select_task' => sub($c) {
-  $c->select_task($c->param('task')) if $c->param('task');
+get '/select_bucket' => sub($c) {
+  $c->select_bucket($c->param('bucket')) if $c->param('bucket');
 };
 get '/manage_roles';
 get '/create_user';
-get '/create_task';
+get '/create_bucket';
 get '/enter_loa';
 get '/access_cloud';
 get '/reconcile';
@@ -220,9 +211,9 @@ get '/reports';
 post '/manage_roles' => sub($c) {
   for my $user ($c->users) {
     for my $role ($c->roles) {
-      app->log->debug("setting $user @{[ $c->task ]} $role to "
+      app->log->debug("setting $user @{[ $c->bucket->id ]} $role to "
           . !!$c->param("$user\_$role"));
-      $perms{$user}{$c->task}{$role} = !!$c->param("$user\_$role");
+      $perms{$user}{$c->bucket->id}{$role} = !!$c->param("$user\_$role");
     }
   }
   $c->flash(msg => "Saved changes");
@@ -231,20 +222,22 @@ post '/manage_roles' => sub($c) {
 
 post '/create_user' => sub($c) {
   my $user = $c->param('name');
-  $perms{$user}{$c->task} = {};
+  $perms{$user}{$c->bucket->id} = {} if $c->bucket;
   $c->flash(msg => "Added user $user");
   $c->redirect_to('manage_roles');
 };
 
-post '/create_task' => sub($c) {
-  my $task_number = trim($c->param('task_number'))
-    or return $c->error('missing task number');
-  my $task_description = trim($c->param('task_description'))
-    or return $c->error('missing task description');
-  return "Task $task_number already exists" if exists($tasks{$task_number});
-  $c->add_task($task_number => $task_description);
-  $c->select_task($task_number);
-  $c->redirect_to('select_task');
+post '/create_bucket' => sub($c) {
+  # TODO: more than just task order.
+  my $number = trim($c->param('task_number')) or return $c->error('missing task number');
+  my $type = trim($c->param('bucket_type')) or return $c->error('missing type');
+  my $name = trim($c->param('name')) or return $c->error('missing name');
+  my $id = $number;
+  return "Task $id already exists" if exists($buckets{$id});
+  my $b = TaskOrder->new(id => $id, type => $type, name => $name);
+  $c->add_bucket($b);
+  $c->select_bucket($id);
+  $c->redirect_to('select_bucket');
 };
 
 app->start;
