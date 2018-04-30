@@ -2,9 +2,10 @@
 use Mojolicious::Lite;
 use Mojo::Util qw/trim/;
 use v5.20;
+use FindBin;
 use experimental 'signatures';
 
-use lib './lib';
+use lib "$FindBin::Bin/lib";
 use Atat::Objects;
 
 plugin AssetPack => {
