@@ -1,15 +1,24 @@
+<div class='w3-light-green w3-card w3-padding'>
 
+Classification level: <b>unclassified</b>.
+<br>
 % if ($c->session('user')) {
     Welcome, <%= session('user') %>!
 % } else {
     Please log in.
-    %= form_for 'login' => method => 'POST' => begin
-    %= text_field 'username', placeholder => 'Username', class => 'w3-input';
-    <br>
-    <center>
-    %= submit_button 'log in with CAC', class => 'w3-button w3-blue-gray';
-    &nbsp;
+    <div class='w3-row'>
+    <div class='w3-col s6'>
+    %= form_for 'login' => method => 'POST' => class => 'w3-card w3-white w3-padding w3-margin w3-center' => begin
+    %= text_field 'username', placeholder => 'Username', class => 'w3-input w3-border';
     %= submit_button 'log in with MFA', class => 'w3-button w3-dark-gray';
     %= end
-    </center>
+    </div>
+    <div class='w3-col s6'>
+    %= form_for 'login' => method => 'POST' => class => 'w3-card-2 w3-padding w3-margin w3-center w3-white' => begin
+    %= hidden_field 'cac_login' => 1
+    %= submit_button 'log in with CAC', class => 'w3-button w3-blue-gray';
+    %= end
+    </div>
+    </div>
 % }
+</div>

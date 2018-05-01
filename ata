@@ -15,6 +15,8 @@ app->asset->process(
   )
 );
 
+plugin 'ssl_auth';
+
 my @pages = qw/
   login
   select_task
@@ -183,6 +185,7 @@ get '/logout' => sub($c) {
 
 
 post '/login' => sub($c) {
+  app->log->debug($c->dumper( $c->req->params->to_hash) );
   unless ($c->req->param('username')) {
     $c->flash(msg => 'missing username');
     return $c->redirect_to('login');
@@ -193,7 +196,6 @@ post '/login' => sub($c) {
 
 # Private routes
 under sub($c) {
-  $c->app->log->debug($c->dumper(\%perms));
   my $user = $c->user or return $c->unauthorized;
   my $role = $c->current_route;
   $c->app->log->debug("checking auth for $user to perform $role");
