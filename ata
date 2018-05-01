@@ -1,12 +1,35 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite;
 use Mojo::Util qw/trim/;
+use Mojo::File qw/path/;
 use v5.20;
 use FindBin;
+use FreezeThaw qw(freeze thaw);
 use experimental 'signatures';
 
 use lib "$FindBin::Bin/lib";
 use Atat::Objects;
+
+# In memory storage of everything
+my %buckets;   # bucket->id => bucket
+my %users;     # user->id   => user
+my %roles;     # role->name => role
+
+# Set to 1 to persist data between server restarts.
+my $PERSIST = $ENV{ATA_PERSIST};
+my $SAVE_FILE = 'ata-objects.frozen';
+if ($PERSIST and -e $SAVE_FILE) {
+   my ($u,$r,$b) = thaw( path($SAVE_FILE)->slurp );
+   %buckets = %$b;
+   %users = %$u;
+   %roles = %$r;
+}
+
+if ($PERSIST) {
+    app->hook(after_render => sub {
+        path($SAVE_FILE)->spurt( freeze( \%users, \%roles, \%buckets ) );
+    });
+}
 
 plugin AssetPack => {
     pipes => [qw/Sass Css Combine/]
@@ -34,6 +57,8 @@ my @pages = qw/
   logout
   /;
 
+my @permissions = grep { $_ !~ /log(in|out)/ } @pages;
+
 my %labels = (
   login        => 'Login',
   create_user  => "Add a new AT-AT user",
@@ -51,16 +76,29 @@ app->defaults(pages => \@pages, labels => \%labels, layout => 'default',);
 
 # Permissions are based on bucket + role.
 
-my %perms;     # user => bucket->id => role => 1
-my %buckets;   # bucket->id => bucket
+$roles{bucket_creator} //= UserRole->new(
+    name        => 'bucket_creator',
+    permissions => {
+      create_bucket => 1,
+      manage_roles  => 1,
+      select_bucket => 1,
+      create_user   => 1,
+    },
+  );
 
 app->helper(
-  perms => sub($c) {
-    \%perms;
+  permissions => sub($c) {
+    @permissions
   }
 );
 
-app->helper(user => sub($c) { $c->session('user'); });
+app->helper( roles => sub($c) { sort keys %roles } );
+
+app->helper(user => sub($c) {
+    return undef unless $c->session('user');
+    $users{ $c->session('user') };
+});
+
 app->helper(
   bucket => sub($c) {
     my $id = $c->session('bucket') or return '';
@@ -72,64 +110,68 @@ app->helper(
 
 app->helper(
   users => sub($c) {
-    keys %perms;
+    sort { $a->username cmp $b->username} values %users;
   }
 );
 
 app->helper(
-  roles => sub($c) {
-    (grep { $_ !~ /^(login|logout)$/ } @pages), 'cac', 'mfa';
+  user_roles => sub($c) {
+    sort { $a->name cmp $b->name } (
+        values %roles,
+        @{ $c->user->roles }
+    );
+  }
+);
+
+app->helper(
+  permissions => sub($c) {
+    (grep { $_ !~ /^(login|logout)$/ } @pages)
   }
 );
 
 # Check perms for a user
 app->helper(
-  check_perms => sub ($c, $user, $role) {
+  check_perms => sub ($c, $user, $perm) {
 
     # Unchangeable
-    for ($role) {
-      /login/  and return !$user;
+    for ($perm) {
+      /login/  and return 1;
       /logout/ and return 1;
     }
 
-    # Defaults if no bucket is selected
-    my $bucket = $c->bucket or app->log->debug("no bucket");
-    unless ($bucket) {
-      for ($role) {
-        /create_bucket/ and return !!$user;
-        /select_bucket/ and return !!$user;
+    # No user?  No perms.
+    return 0 unless $user;
+
+    # No bucket?
+    my $bucket = $c->bucket or do {
+      for ($perm) {
+        /create_bucket/ and return 1;
+        /select_bucket/ and return 1;
       }
       return 0;
-    }
+    };
 
-    # Explicitly set.
-    return 0 unless $user;
-    app->log->debug("checking perms for user $user");
-    if (exists($perms{$user}{$bucket->id}{$role})) {
-      return $perms{$user}{$bucket->id}{$role};
-    }
-
-    # Fallbacks.
-    for ($role) {
-      /create_bucket/ and return !!$user;
-      /select_bucket/ and return !!$user;
-    }
-
-    return 0;
+    # Bucket and a user.
+    return $user->has_permission($bucket, $perm);
   }
 );
 
 # Check perms for the logged in user.
 app->helper(
-  user_can => sub ($c, $role) {
-    return $c->check_perms($c->user, $role);
+  user_can => sub ($c, $perm) {
+    return $c->check_perms($c->user, $perm);
   }
 );
 
 app->helper(
   users_buckets => sub($c) {
-    my $grant = $perms{$c->user} or return;
-    sort keys %$grant;
+    return grep { $_->user_can($c->user, 'select_bucket') } values %buckets;
+  }
+);
+
+app->helper(
+  find_role => sub($c,$role) {
+    return $roles{ $role };
   }
 );
 
@@ -137,8 +179,7 @@ app->helper(
   add_bucket => sub ($c, $bucket) {
     my $id = $bucket->id;
     $buckets{$id}                         = $bucket;
-    $perms{$c->user}{$id}{'manage_roles'} = 1;
-    $perms{$c->user}{$id}{'create_user'}  = 1;
+    $bucket->add_grant( $c->user, $c->find_role('bucket_creator') );
   }
 );
 
@@ -184,16 +225,17 @@ post '/login' => sub($c) {
     $c->flash(msg => 'missing username');
     return $c->redirect_to('login');
   }
-  $c->session('user', $c->req->param('username'));
+  my $name = $c->req->param('username');
+  $users{ $name } ||= User->new(username => $name);
+  $c->session('user', $name);
   $c->redirect_to('login');
 };
 
 # Private routes
 under sub($c) {
-  $c->app->log->debug($c->dumper(\%perms));
   my $user = $c->user or return $c->unauthorized;
   my $role = $c->current_route;
-  $c->app->log->debug("checking auth for $user to perform $role");
+  $c->app->log->debug("checking auth for @{[ $user->username ]} to perform $role");
   return $c->unauthorized unless $c->user_can($role);
   1;
 };
@@ -201,30 +243,47 @@ under sub($c) {
 get '/select_bucket' => sub($c) {
   $c->select_bucket($c->param('bucket')) if $c->param('bucket');
 };
-get '/manage_roles';
 get '/create_user';
 get '/create_bucket';
 get '/enter_loa';
 get '/access_cloud';
 get '/reconcile';
 get '/reports';
+get '/manage_roles';
 
 post '/manage_roles' => sub($c) {
-  for my $user ($c->users) {
-    for my $role ($c->roles) {
-      app->log->debug("setting $user @{[ $c->bucket->id ]} $role to "
-          . !!$c->param("$user\_$role"));
-      $perms{$user}{$c->bucket->id}{$role} = !!$c->param("$user\_$role");
+  # 1. permissions
+  my $user = $c->user->username;
+  for my $role (values %roles) {
+    for my $perm ($c->permissions) {
+        $role->permissions->{$perm} = !!$c->param( $role->slug . '_' . $perm );
     }
   }
+  if (my $new = $c->param('new_role')) {
+    $new = trim($new);
+    my $role = UserRole->new(name => $new, permissions => {});
+    for my $perm ($c->permissions) {
+        $role->permissions->{$perm} = !!$c->param( $role->slug . '_' . $perm );
+    }
+    $roles{ $new } = $role;
+  }
+
+  # 2. user -> role assignments
+  $c->bucket->grants([]);
+  for my $user ($c->users) {
+    for my $role ( @{ $c->every_param( $user->username . '_roles' ) } ) {
+        $c->bucket->add_grant( $user, $roles{$role});
+    }
+  }
+
   $c->flash(msg => "Saved changes");
   $c->redirect_to('manage_roles');
 };
 
 post '/create_user' => sub($c) {
-  my $user = $c->param('name');
-  $perms{$user}{$c->bucket->id} = {} if $c->bucket;
-  $c->flash(msg => "Added user $user");
+  my $name = $c->param('name');
+  $users{ $name } = User->new(username => $name);
+  $c->flash(msg => "Added user $name");
   $c->redirect_to('manage_roles');
 };
 

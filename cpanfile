@@ -6,3 +6,4 @@ requires 'Perl::Tidy';
 requires 'Test::PerlTidy';
 requires 'Perl::Critic';
 requires 'Test::Perl::Critic';
+requires 'FreezeThaw';

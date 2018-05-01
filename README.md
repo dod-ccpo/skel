@@ -27,13 +27,17 @@ Install prerequisites:
 
     ./ata daemon
 
-# Run the server in dev mode and auto-reload if assets are changed
+# Run the server in dev mode and auto-reload.
 
-    morbo -w assets ./ata
+    morbo ./ata
 
 # Run the server in production mode
 
     hypnotoad ./ata
+
+# Save the data in a local file called ata-objects.frozen
+
+    ATA_PERSIST=1 ./ata daemon
 
 # Testing
 

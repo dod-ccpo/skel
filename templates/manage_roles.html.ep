@@ -1,25 +1,62 @@
-manage roles for bucket <%= bucket->id %>
+manage roles for <%= bucket->type %> <%= bucket->name %> ( <%= bucket->id %> )
 
 %= form_for 'manage_roles', method => 'POST' => begin
 
 <table class='w3-table w3-table-all'>
+    <caption>User Roles</caption>
+    <tr>
+        <th>User</th>
+        <!-- <th>Roles</th> -->
+        <th>Roles on <%= bucket->type %> <%= bucket->name %></th>
+    </tr>
+    % for my $user (users()) {
+        <tr>
+            <th><%= $user->username %></th>
+            <!-- 
+            <td>
+                <% for my $r (@{ $user->roles }) { %>
+                    <%= $r %>
+                <% } %>
+            </td>
+            -->
+            <td>
+                % param $user->username .'_roles' => $user->bucket_roles( bucket )->map(sub {$_->name})->to_array;
+                <%= select_field $user->username .'_roles' => [ roles() ], multiple => 1;
+                <% for my $r (@{ $user->bucket_roles(bucket()) }) { %>
+                    <%= $r->name %>
+                <% } %>
+            </td>
+        </tr>
+    % }
+</table>
+
+<table class='w3-table w3-table-all' style='overflow:scroll;'>
+<caption>Permissions</caption>
 <tr>
-<td>User</td>
-% for my $role (roles()) {
-    <td><%= $role %></td>
+<th>Role</th>
+% for my $perm (permissions()) {
+    <td><%= $perm %></td>
 % }
 </tr>
-% for my $user (keys %{ perms() } ) {
-<tr>
-<th><%= $user %></th>
-% for my $role (roles()) {
-    <td style='text-align:center;'>
-    % my $checked = check_perms( $user, $role );
-    %= check_box "$user\_$role" => ( checked => 1 ) x $checked;
-    </td>
+% for my $role (user_roles()) {
+    <tr>
+        <th><%= $role->name %></th>
+        % for my $perm (permissions()) {
+            <td>
+            % my $checked = $role->permissions->{ $perm } || 0;
+            %= check_box $role->slug."_$perm" => ( checked => 1 ) x $checked;
+            </td>
+        % }
+    </tr>
 % }
-</tr>
-% }
+    <tr>
+        <th><%= text_field 'new_role', placeholder => 'new role' %></th>
+        % for my $perm (permissions()) {
+            <td>
+            %= check_box "new_$perm"
+            </td>
+        % }
+    </tr>
 </table>
 
 <center>

@@ -9,15 +9,20 @@
 <!-- Top container -->
 <div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
   <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i>  Menu</button>
-  <span class="w3-bar-item w3-left"><%= user() || 'not logged in' %></span>
+  <span class="w3-bar-item w3-left"><%= user ? user->username : 'not logged in' %></span>
   <span class="w3-bar-item w3-left">
       % if (bucket) {
+      <%= bucket->type %>:
       <%= bucket->name %>
       % } else {
       No funding pool selected.
       % }
   </span>
-  <span class="w3-bar-item w3-right">AT-AT</span>
+  <span class="w3-bar-item w3-right">
+      %= link_to 'dashboard' => begin
+      AT-AT
+      %= end
+  </span>
 </div>
 
 <div class="w3-overlay w3-hide-large w3-animate-opacity" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
@@ -32,7 +37,7 @@
 
 <div class="w3-main" style="margin-left:30px;margin-top:44px;display:flex;">
 
-<div style='flex:1;border:1px solid black;margin-top:10px;'>
+<div style='flex:1;border:1px solid black;margin-top:10px;min-width:200px;'>
 <ul class='w3-ul'>
 % for my $page (@$pages) {
     <li class='<%= (current_route() eq $page ? 'w3-pale-blue' : '') %>'>
@@ -49,7 +54,7 @@
 </ul>
 </div>
 
-<div style='flex:3;margin-left:20px;margin-right:20px;'>
+<div style='flex:3;margin-left:20px;margin-right:20px;overflow:scroll;'>
     <br><br>
 %= content
 </div>

@@ -4,8 +4,8 @@ Click on an entry below to switch funding pools:
 <ul class='w3-ul w3-border'>
 % for my $b (@buckets) {
     <li class='<%= $b eq bucket() ? 'w3-blue' : 'w3-sand' %>'>
-    %= link_to url_for->query(bucket => $b) => begin
-        Bucket <%= $b %>
+    %= link_to url_for->query(bucket => $b->id) => begin
+        <%= $b->type %>: <%= $b->name %>
     %= end
     </li>
 % }

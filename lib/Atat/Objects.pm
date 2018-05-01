@@ -11,17 +11,37 @@
 
 # User: An ATAT user.
 package User {
-  use Mojo::Base -base;
-  has 'username';    # Username in ATAT
+  use Mojo::Base -base, -signatures;
+  use Mojo::Collection qw/c/;
+  has 'username';    # Username in ATAT.
   has 'piv';         # Data from PIV card.
-  has 'roles';       # Roles within ATAT.
+  has 'roles'        # Bucket-independent roles within ATAT.
+    => sub { [] };
+
+  sub bucket_roles ($user, $bucket) {
+    return c(map { $_->role }
+        grep { $_->user->username eq $user->username } @{$bucket->grants});
+  }
+
+  sub has_permission ($user, $bucket, $perm) {
+    for my $grant (@{$bucket->grants}) {
+      next unless $grant->user->username eq $user->username;
+      return 1 if $grant->role->permissions->{$perm};
+    }
+    return 0;
+  }
 }
 
 # UserRole: Defines a set of permissions surrounding access to a CSP.
 package UserRole {
   use Mojo::Base -base;
-  has 'csp_account';    # CSP account (optional)
-  has 'permissions';    # List of permissions (strings) for this role.
+  use Mojo::Util qw/slugify/;
+
+  has 'name';           # Name of this role.
+  has 'csp_account';    # CSP account (optional).
+  has 'permissions'     # Set of permissions for this role. (hash)
+    => sub { +{} };
+  sub slug { slugify(shift->name) }
 }
 
 # Account: An account.
@@ -47,7 +67,8 @@ package Bucket {
   has 'name';                # Name of the bucket.
   has 'limit';               # Limit on usage for this bucket.
   has 'used';                # Amount of money used.
-  has 'grants';              # List of Grants for this bucket.
+  has 'grants'               # List of Grants for this bucket.
+    => sub { [] };
   has 'distribute_into'
     ;    # A list of other buckets into which this one can be distributed.
   has '_aggregated_into'
@@ -55,6 +76,17 @@ package Bucket {
   has '_aggregated_from'    # The inverse of the above.
     => sub { [] };
   has 'csp_tags';           # Tags in the CSP associated with this bucket.
+
+  sub add_grant ($self, $user, $role) {
+    push @{$self->grants}, Grant->new(user => $user, role => $role);
+  }
+
+  sub user_can ($self, $user, $permission) {
+    for my $grant (@{$self->grants}) {
+      next unless $grant->user->username eq $user->username;
+      return 1 if $grant->role->permissions->{$permission};
+    }
+  }
 
   sub remaining ($self) {
     $self->limit - ($self->used || 0);

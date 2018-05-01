@@ -1,6 +1,6 @@
 
-% if ($c->session('user')) {
-    Welcome, <%= session('user') %>!
+% if (user()) {
+    Welcome, <%= user->username %>!
 % } else {
     Please log in.
     %= form_for 'login' => method => 'POST' => begin

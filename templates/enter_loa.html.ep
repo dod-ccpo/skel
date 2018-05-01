@@ -1,4 +1,4 @@
 Enter a line of accounting:
 <br>
-%= text_field 'loa', class => "w3-input";
+%= text_field 'loa', class => "w3-input w3-border";
 %= submit_button 'add';

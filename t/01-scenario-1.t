@@ -44,21 +44,25 @@ for my $who (qw/alice bob/) {
 
   my %checked = $t->tx->res->dom->find('input')->map(
     sub {
-      ($_->attr('name') => $_->attr('checked'));
+      ($_->attr('name') => $_->val);
     }
   )->each;
-  my $box = $who . '_manage_roles';
-  ok !$checked{$box}, "no permission yet for $who";
-  $checked{$box} = 1;
-  $t->post_ok('/manage_roles' => form => \%checked)->status_is(200)
-    ->content_like('/Saved/');
+  my %selected = $t->tx->res->dom->find('select')->map(
+    sub {
+      $_->attr('name') => $_->val;
+    }
+  )->each;
 
+  $selected{$who . '_roles'} = ['bucket_creator'];
+  my %params = (%checked, %selected);
+  $t->post_ok('/manage_roles' => form => \%params)->status_is(200)
+    ->content_like('/Saved/');
 }
 
 # Ensure Alice can manage roles.
 $t->get_ok('/manage_roles');
-ok $t->tx->res->dom->at('input[name=alice_manage_roles]')->attr('checked'),
-  'Alice can manage roles';
+is $t->tx->res->dom->at('select[name=alice_roles]')->val->[0],
+  'bucket_creator', 'Alice is a bucket creator';
 
 $t->get_ok('/logout')->status_is(200);
 

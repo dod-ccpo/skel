@@ -11,3 +11,7 @@ severity = 4
 [Subroutines::ProhibitSubroutinePrototypes]
 # To allow signatures.
 severity = 1
+
+[Subroutines::ProhibitExplicitReturnUndef]
+# These are fine when returning undef in scalar context.
+severity = 1
