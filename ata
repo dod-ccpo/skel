@@ -8,7 +8,7 @@ use FreezeThaw qw(freeze thaw);
 use experimental 'signatures';
 
 use lib path(__FILE__)->dirname . "/lib";
-use Atat::Objects;
+require Atat::Objects;
 
 # In memory storage of everything
 my %buckets;   # bucket->id => bucket
@@ -300,4 +300,4 @@ post '/create_bucket' => sub($c) {
   $c->redirect_to('select_bucket');
 };
 
-app->start unless caller eq 'main';
+app->start unless (caller and (caller eq 'main'));
