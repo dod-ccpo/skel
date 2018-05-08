@@ -8,7 +8,7 @@ use FreezeThaw qw(freeze thaw);
 use experimental 'signatures';
 
 use lib path(__FILE__)->dirname . "/lib";
-require Atat::Objects;
+use Atat::Objects;
 
 # In memory storage of everything
 my %buckets;   # bucket->id => bucket
