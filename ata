@@ -44,7 +44,10 @@ app->asset->process(
   )
 );
 
-app->asset->route->to(base_url => $ENV{URL_BASE}) if $ENV{URL_BASE};
+app->hook(before_dispatch => sub($c) {
+  my $forward_base = $c->req->headers->header('X-Forwarded-Base');
+  $c->req->url->base(Mojo::URL->new($forward_base)) if $forward_base;
+});
 
 my @pages = qw/
   login
