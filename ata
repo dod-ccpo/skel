@@ -44,6 +44,8 @@ app->asset->process(
   )
 );
 
+app->asset->route->to(base_url => $ENV{URL_BASE}) if $ENV{URL_BASE};
+
 my @pages = qw/
   login
   select_bucket
