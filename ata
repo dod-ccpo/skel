@@ -127,12 +127,6 @@ app->helper(
   }
 );
 
-app->helper(
-  permissions => sub($c) {
-    (grep { $_ !~ /^(login|logout)$/ } @pages)
-  }
-);
-
 # Check perms for a user
 app->helper(
   check_perms => sub ($c, $user, $perm) {
