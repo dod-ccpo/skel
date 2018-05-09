@@ -59,4 +59,3 @@ Critique an individual file, with verbose output:
 Tidy an individual file automatically:
 
     perltidy -b lib/Atat/Objects.pm
-
